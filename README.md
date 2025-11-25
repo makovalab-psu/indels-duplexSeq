@@ -9,7 +9,7 @@ Edmundo Torres-González, Barbara Arbeithuber, Nick Stoler, Marzia A. Cremona, O
 
 This repository contains the following directories:
 
-1. Du Novo pipeline and variant calling
+1. **`Du Novo pipeline and variant calling`**: Includes all Python and Bash scripts necessary for analyzing the sequencing data, generating duplex consensus reads, map these to a reference genome, and perform variant calling.
 
 2. 
 
