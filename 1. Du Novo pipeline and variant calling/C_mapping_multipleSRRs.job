@@ -1,0 +1,247 @@
+#!/bin/bash
+#SBATCH --job-name=bwa_multiSRR
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=10000
+#SBATCH --time=0-80:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=ejt89@psu.edu
+#SBATCH --chdir=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin
+#SBATCH --output=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-%j.out
+#SBATCH --error=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-%j.err
+#SBATCH --exclude nn[6-8]
+
+echo "Job started"; date "+%Y-%m-%d.%H:%M:%S"
+
+# Standard tmp folder may be too small.
+TMPDIR=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/tmp
+
+# Conda environment.
+export CONDA_ENVS_PATH=/galaxy/home/ejt89/.conda/envs
+#source /opt/anaconda/etc/profile.d/conda.sh
+source /galaxy/home/ejt89/anaconda3/etc/profile.d/conda.sh
+##conda activate /galaxy/home/ejt89/.conda/envs/bioinfo
+source activate /galaxy/home/ejt89/.conda/envs/bioinfo
+##conda activate bioinfo
+conda info --envs
+conda list
+
+## Stop on errors and print all commands.
+set -uex
+
+################
+## Code testing.
+################
+if [[ $# -ne 2 ]] ; then
+	echo '### You need to provide two arguments: SPECIES , SAMPLE_ID ###'
+	echo '### e.g. macaque Rh020_M_1 ###'
+	echo '### Consult the runids_sampleids.txt file for this species ###'
+	echo '### You provided '$#' argument(s). ###'
+	exit 1
+elif [[ $2 != Rh* && $2 != G* ]] ; then
+	echo "### This is not the correct Sample ID. Should be something like Rh020_M_1 or Rh020_M_merged (for macaque), or G132p5_M_1 or G132p5_M_merged (for mouse) ###"
+	exit 2
+fi
+
+#######################
+# Assign the arguments.
+#######################
+SPECIES=$1 #Species name (macaque or mouse)
+SAMPLE_ID=$(echo $2 | sed 's/_merged/_1/g')
+SAMPLE_ID_1=`echo $SAMPLE_ID | sed 's/_2/_1/g'`
+SAMPLE_ID_2=`echo $SAMPLE_ID | sed 's/_1/_2/g'`
+SAMPLE_ID_3=`echo $SAMPLE_ID | sed 's/_1/_3/g' | sed 's/_2/_3/g'`
+
+
+###################
+# Project directory.
+###################
+cd ../results
+cd ${SPECIES}*
+
+# Check if the runids/sample ids file exists (derived from SRA accession). 
+FILE=runids_sampleids.txt
+if [ -f "$FILE" ]; then
+	echo "### $FILE exists."
+else 
+	echo "### $FILE does not exist."
+	exit 3
+fi
+
+
+###################
+# Update arguments.
+###################
+# Get the SRR_IDs that correspond to the sample IDs.
+SRR_1=`cat runids_sampleids.txt | grep $SAMPLE_ID_1 | cut -f1`
+SRR_2=`cat runids_sampleids.txt | grep $SAMPLE_ID_2 | cut -f1`
+SRR_3=`cat runids_sampleids.txt | grep $SAMPLE_ID_3 | cut -f1`
+
+# Test if the sample IDs correspond to a SRR id.
+if [[ $SRR_1 = SRR* ]] ; then
+	echo "### The following SAMPLE_ID_1 argument ( ${SAMPLE_ID_1} ) does correspond to a SRR in the runids_sampleids.txt file ###"
+else
+	echo "### The SAMPLE_ID_1 argument (${SAMPLE_ID_1}) does NOT correspond to a SRR in the runids_sampleids.txt file ###"
+	exit 4
+fi
+
+if [[ $SRR_2 = SRR* ]] ; then
+        echo "### The SAMPLE_ID_2 argument (${SAMPLE_ID_2}) does correspond to a SRR in the runids_sampleids.txt file ###"
+else
+        echo "### The SAMPLE_ID_2 argument (${SAMPLE_ID_2}) does NOT correspond to a SRR in the runids_sampleids.txt file ###"
+        exit 5
+fi
+
+if [[ $SRR_3 = SRR* ]] ; then
+        echo "### The SAMPLE_ID_3 argument (${SAMPLE_ID_3}) does correspond to a SRR in the runids_sampleids.txt file ###"
+else
+        echo "### The SAMPLE_ID_3 argument (${SAMPLE_ID_3}) does NOT correspond to a SRR in the runids_sampleids.txt file ###"
+	echo "### This is expected, as most SAMPLE IDs do NOT have a 3rd SRR run. ###"
+        ###exit 6
+fi
+
+
+#######
+# Tools:
+########
+BAMUTIL=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/bamUtil/bin/bam
+GATK=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/gatk-4.2.5.0/gatk
+
+##############
+## References:
+##############
+# Rhesus macaque (relinearized using `seqkit restart`).
+# Mouse genome (includes a fixed insertion of A present in this pedigree).
+
+# Picks the reference based on the project ID.
+if [ ${SPECIES} == 'macaque' ] ; then 
+	echo '# Using Rhesus macaque references (rheMac10).'
+        # Just the chrM reference for rheMac10.
+        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM.fa
+        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa
+        # Full rheMac10 reference.
+        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.fa
+        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.relin8400.fa
+
+elif [ ${SPECIES} == 'mouse' ] ; then
+	echo '# Using mouse references (NC_005089insA).'
+        # Just the chrM reference for mouse (NC_005089_9821insA).
+        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM.fa
+        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
+
+        # Full GRCm38 (mm10) reference.
+        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.fa
+        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.relin8400.fa
+
+else
+	echo '# Cannot recognize which reference to use.'
+	exit 7
+fi
+
+
+##################
+## Work directory:
+##################
+# Create a new merged SRR directory.
+DIR_SUFFIX=`echo ${SAMPLE_ID_1} | rev | cut -d'_' --complement -f1 | rev`
+mkdir -p ${DIR_SUFFIX}_merged ; cd ${DIR_SUFFIX}_merged
+
+# File names: Duplex consensus reads (paired end).
+R1='duplex.filt_1.fq'
+R2='duplex.filt_2.fq'
+
+# Print working directory.
+pwd
+
+
+
+############################################################
+#   1. Concatenate the multiple SRR runs for this sample   #
+############################################################
+# Create a merged fastQ.
+if [ -f "../$SRR_3/duplex.filt_1.fq" ]; then
+	echo "### ../$SRR_3/duplex.filt_1.fq exists."
+	echo "### Adding ${SRR_1}, ${SRR_2}, and ${SRR_3} fastQ files into one."
+	# Paired end files 1.
+	cat ../${SRR_1}/duplex.filt_1.fq ../${SRR_2}/duplex.filt_1.fq ../${SRR_3}/duplex.filt_1.fq > duplex.filt_1.fq
+	# Paired end files 2.
+	cat ../${SRR_1}/duplex.filt_2.fq ../${SRR_2}/duplex.filt_2.fq ../${SRR_3}/duplex.filt_2.fq > duplex.filt_2.fq
+elif [ -f "../$SRR_2/duplex.filt_1.fq" ]; then
+	echo "### ../$SRR_2/duplex.filt_1.fq exists."
+	echo "### Adding ${SRR_1} and ${SRR_2} fastQ files into one."
+        # Paired end files 1.
+        cat ../${SRR_1}/duplex.filt_1.fq ../${SRR_2}/duplex.filt_1.fq > duplex.filt_1.fq
+        # Paired end files 2.
+        cat ../${SRR_1}/duplex.filt_2.fq ../${SRR_2}/duplex.filt_2.fq > duplex.filt_2.fq
+else
+	echo "### Merged fastQ files could not be created. ###"
+	exit 8
+fi
+
+
+
+###############################################################
+#   2. Map duplex consensus reads to reference with bwa-mem   #
+###############################################################
+# Create a BAM file and sort it (-t nThreads).
+### (Du Novo suggestion: GATK LeftAlignIndels | Alternative: freebayes' bamleftalign)
+### The same indel can often be placed at multiple positions and still represent the same haplotype.
+#bwa mem $REF $R1 $R2 | samtools sort > alignments.bam
+
+# Left-align indels from read data. 
+## The WellformedReadFilter default setting breaks if the read lengths are not consistent (which we trim) and if there is an N in the read.
+$GATK LeftAlignIndels -R $REF -I alignments.bam -O alignments.bla.bam --disable-read-filter WellformedReadFilter
+
+# Filter for chrM.
+samtools view alignments.bla.bam chrM > alignments.bla.chrM.bam
+
+# Clip overlapping read pairs.
+$BAMUTIL clipOverlap --in alignments.bla.chrM.bam --stats --out alignments.clipped.bam
+
+# Index the BAM file.
+samtools index alignments.clipped.bam
+
+# Exclude multi-mapped reads (keep uniquely-mapped reads).
+samtools view alignments.clipped.bam | grep -v "XA:" | samtools view -bS -T $REF - > alignments.umr.bam
+
+# Keep the unmapped reads.
+samtools view -f4 alignments.umr.bam > alignments.umr.unmapped
+
+
+
+###############################################################
+#   3. Map duplex consensus reads to RELINEARIZED reference   #
+###############################################################
+# Create a BAM file and sort it (-t nThreads).
+### (Du Novo suggestion: GATK LeftAlignIndels | Alternative: freebayes' bamleftalign)
+### The same indel can often be placed at multiple positions and still represent the same haplotype.
+#bwa mem $REFrelin $R1 $R2 | samtools sort > relin.alignments.bam
+
+# Left-align indels from read data.
+## The WellformedReadFilter default setting breaks if the read lengths are not consistent (which we trim) and if there is an N in the read.
+$GATK LeftAlignIndels -R $REFrelin -I relin.alignments.bam -O relin.alignments.bla.bam --disable-read-filter WellformedReadFilter
+
+# Exclude multi-mapped reads (keep uniquely-mapped reads).
+samtools view relin.alignments.bla.bam | grep -v "XA:" | samtools view -bS -T $REF - > relin.alignments.umr.bam
+
+# Index the BAM file.
+samtools index relin.alignments.umr.bam
+
+# Filter for chrM.
+samtools view relin.alignments.umr.bam chrM > relin.alignments.umr.chrM.bam
+
+# Clip overlapping read pairs.
+samtools view relin.alignments.umr.chrM.bam | $BAMUTIL clipOverlap --in - --stats --out relin.alignments.clipped.bam
+
+# Index the BAM file.
+samtools index relin.alignments.clipped.bam
+
+# Keep the unmapped reads.
+samtools view -f4 relin.alignments.clipped.bam > relin.alignments.clipped.unmapped
+
+
+
+echo "Job ended"; date "+%Y-%m-%d.%H:%M:%S"
+
+

@@ -1,0 +1,268 @@
+#!/bin/bash
+#SBATCH --job-name=dunovo
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=20000
+#SBATCH --time=0-500:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=ejt89@psu.edu
+#SBATCH --chdir=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin
+#SBATCH --output=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-%j.out
+#SBATCH --error=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-%j.err
+#SBATCH --exclude nn[6-8]
+
+echo "Job started"; date "+%Y-%m-%d.%H:%M:%S"
+
+# Conda environment.
+export CONDA_ENVS_PATH=/galaxy/home/ejt89/.conda/envs
+#source /opt/anaconda/etc/profile.d/conda.sh
+source /galaxy/home/ejt89/anaconda3/etc/profile.d/conda.sh
+##conda activate /galaxy/home/ejt89/.conda/envs/bioinfo
+source activate /galaxy/home/ejt89/.conda/envs/bioinfo
+##conda activate bioinfo
+conda info --envs
+conda list
+
+# Standard tmp folder is too small.
+TMPDIR=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/tmp
+
+# Stop on errors and print all commands.
+set -uex
+
+# Tool directory.
+#DUNOVO=../src/dunovo
+DUNOVO="/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/dunovo"
+DUNOVO_2="/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/dunovo-2.14/dunovo"
+
+# Test input argument.
+INPUT_DIR=$1
+echo $1
+
+################
+## Code testing.
+################
+## Tests if only one argument is given.
+if [[ $# == 1 ]] ; then
+	echo '### You provided one argument, it should be: [ ../DirectoryToData/species_PROJECTID/SRRID ] ###'
+	echo '### e.g. ../data/DuplexSeq_mtDNA/mouse_PRJNA563921/SRR10068918_2.fastq.gz ###'
+
+	# Test if this is a human sample (unpublished; no SRR).
+	if [[ $( echo $1 | rev | cut -d'/' -f1 | rev | sed 's/-/_/g' | cut -d'_' -f1 ) == hs[0-9][0-9][0-9] ]]; then 
+		SPECIES='human'
+		# Sample ID (e.g. hs003_Oo4), since these do not have an SRR_ID.
+		SAMPLE_ID=$( echo $1 | rev | cut -d'/' -f1 | rev | sed 's/-/_/g' | cut -d'_' -f1,2 )
+		READS1=$( echo $1 | sed 's/_R2_/_R1_/g' )
+		READS2=$( echo $1 | sed 's/_R1_/_R2_/g' )
+	
+	# Or it's treated like a mouse/macaque sample with SRR as its Sample_ID.
+	else
+		# Project ID (species_SRAproject) and the SRR ID.
+		PROJ_ID=$( echo $1 | rev | cut -d'/' -f2 | rev )
+		SPECIES=$( echo $PROJ_ID | cut -d'_' -f1 )
+		SAMPLE_ID=$( echo $1 | rev | cut -d'/' -f1 | rev | cut -d'.' -f1 | cut -d'_' -f1 )
+		# Parent directory of paired-end files.
+		READS_DIR=/nfs/brubeck.bx.psu.edu/scratch6/makova_lab/downloads/DuplexSeq_mtDNA/${SPECIES}*
+        	# Reads (name of paired-end files).
+	        READS=$( echo $1 | rev | cut -d'/' -f1 | rev )
+		READS1=${READS_DIR}/$( echo ${READS} | sed 's/_2.fa/_1.fa/g' )
+	        READS2=${READS_DIR}/$( echo ${READS} | sed 's/_1.fa/_2.fa/g' )
+
+		# Test SRR_ID.
+		if [[ $SAMPLE_ID = SRR* ]] ; then
+			echo "### The first argument is a directory ending with the sample SRR_ID: ${SAMPLE_ID} ###"
+		else
+			echo "### The first argument is NOT a directory ending with the sample SRR_ID ###"
+			echo "### Instead, the first argument ends in: ${SAMPLE_ID}  ###"
+			exit 2
+		fi
+
+		# Test project ID.
+		if [[ $PROJ_ID = *_PRJNA* ]]
+		then
+			echo "### The first argument is a directory ending with the project ID and sample SRR_ID: ${PROJ_ID}/${SAMPLE_ID} ###"
+		else
+			echo "### The first argument is NOT a directory ending with the project ID and sample SRR_ID ###"
+			echo "### Instead, the first argument ends in: ${PROJ_ID}/${SAMPLE_ID}  ###"
+			exit 3
+		fi
+
+		# Create a directory for this SRA project (species_SRAproject).
+		mkdir -p ${PROJ_ID}
+		
+	fi
+
+## Tests if two arguments are given.
+elif [[ $# == 2 ]] ; then
+    echo '### You provided two arguments, they should be: SPECIES , SRR_ID/Sample_ID ###'
+    echo '### e.g. macaque SRR16770761 (or) human hs003_Oo4 ###'
+
+        if [[ $1 = m*e ]] ; then
+                echo "### The first argument starts with m and ends with e (for macaque or mouse) ###"
+
+	elif [[ $1 = human* ]] ; then
+		echo "### The first argument is human. ###"
+
+        else
+                echo "### The second argument does NOT start with m and ends with e (for macaque or mouse) ###"
+                exit 4
+        fi
+
+	if [[ $2 = SRR* ]] ; then
+	        echo "### The second argument starts with SRR ###"
+
+	elif [[ $2 = hs[0-9][0-9][0-9]_* ]] ; then
+		echo "### The second argument is a Sample_ID for humans ($2) ###"
+
+	else
+	        echo "### The second argument does NOT start with SRR ###"
+	        exit 5
+	fi
+
+	# Assign the arguments.
+	SPECIES=$1 #Species name (macaque or mouse)
+	SAMPLE_ID=$2  #SRR_ID (e.g. SRR16770761) or human Sample_ID (e.g. hs003_Oo4)
+
+## Test if the number of arguments is 0 or above 2 (not acceptable).
+else
+        echo '### If you provide just one argument, it should be: [ ../DirectoryToData/species_PROJECTID/SRRID ] ###'
+        echo '### e.g. ../data/DuplexSeq_mtDNA/mouse_PRJNA563921/SRR10068918_2.fastq.gz ###'
+        echo '### If you provide two arguments, they should be: SPECIES , SRR_ID/Sample_ID ###'
+        echo '### e.g. macaque SRR16770761 (or) human hs003_Oo4 ###'
+        echo '### You provided '$#' argument(s). ###'
+        exit 1
+
+fi
+
+
+################
+# Work directory
+################
+cd ../results
+
+# Project ID (species_SRAproject)
+cd ${SPECIES}*
+
+# SRR ID (or Sample_ID for humans).
+mkdir -p ${SAMPLE_ID}; cd ${SAMPLE_ID}
+
+
+
+######## Main script #########
+
+###################
+# Step 1: FastQC
+###################
+mkdir -p fastqc
+##if (( $(ls -1 fastqc | wc -l) < 2 )); then
+if [[ $# == 1  ]] && [[ $(ls -l fastqc | wc -l) < 2 ]] ; then
+	echo "# Preparing fastqc reports."
+	fastqc --outdir ./fastqc ${READS1}
+	fastqc --outdir ./fastqc ${READS2} 
+fi
+
+########################################################
+# Step 2: Du Novo - Make read families based on barcodes
+########################################################
+## (stating 'bash' is not required)
+## example: make-families.sh reads_1.fastq reads_2.fastq > families.tsv
+if [[ $# == 1 ]] && [[ ! -f "families.tsv" ]] ; then
+	echo "# Preparing families.tsv file."
+	$DUNOVO/make-families.sh ${READS1} ${READS2} > families.tsv
+fi
+if (( $( head families.tsv | wc -l | cut -d' ' -f1 ) == 0 )); then
+        echo "### Families file is empty. The fastQ files could be empty. ###"
+	exit 6
+fi
+
+#########################################################
+# Step 3: Du Novo - Correct errors in barcodes (optional)
+#########################################################
+## example: 	baralign.sh families.tsv refdir barcodes.sam
+##		correct.py families.tsv refdir/barcodes.fa barcodes.sam | sort > families.corrected.tsv
+##if [[ ! -f "barcodes.sam" ]]; then
+if [[ $# == 1 ]] && [[ ! -f "barcodes.sam" ]] ; then
+	echo "# Preparing barcodes.sam file."
+	$DUNOVO/baralign.sh families.tsv refdir barcodes.sam
+fi
+##if [[ ! -f "families.corrected.tsv" ]]; then
+if [[ $# == 1 ]] && [[ ! -f "families.corrected.tsv" ]] ; then
+	echo "# Preparing families.corrected.tsv file."
+	$DUNOVO/correct.py families.tsv refdir/barcodes.fa barcodes.sam | sort > families.corrected.tsv
+fi
+
+################################################################
+# Step 4: Du Novo - Multiple sequence alignment of read families
+################################################################
+# example: align-families.py families.tsv > families.msa.tsv
+# The flag: -p auto | uses all available subprocesses.
+##$DUNOVO/align-families.py -p auto families.corrected.tsv > families.corrected.msa.tsv
+
+if [[ ! -f "families.corrected.tsv" ]]; then
+	echo "### File 'families.corrected.tsv' does not exist for $SAMPLE_ID ###"
+	exit 6
+fi
+
+# Test if split MSA files already exist.
+if [[ ! -f "fam_corr_msa/fam.corr.msa.5.tsv"  ]]; then	
+	echo "# Splitting MSA files and creating separate jobs for each."
+	# Use Nick's awk solution to split files into chunks.
+	mkdir -p fam_corr_msa
+	awk -v nchunks=60 -v outbase=fam_corr_msa/fam.corr -f ../../../bin/chunk-families.awk families.corrected.tsv families.corrected.tsv 
+	# Do a separate MSA for each split file.
+	for FILE_DIR in $(ls --color=no fam_corr_msa/fam.corr.[0-9]*tsv); do \
+		#$DUNOVO/align-families.py -p auto $FILE_DIR > $( echo $FILE_DIR | sed 's/\.corr\./.corr.msa./g' ) ; \
+		sbatch ../../../bin/dunovo_msa.job ${SPECIES} ${SAMPLE_ID} ${FILE_DIR} ; \
+	done
+	exit 0
+elif [[ -f "fam_corr_msa/fam.corr.msa.5.tsv"  ]]; then
+	echo "# Joining split MSA files."
+	# Join the split MSA files into one.
+	cat fam_corr_msa/fam.corr.msa.[1-9]*.tsv > fam_corr_msa/fam.corr.msa.JOINED.tsv
+fi
+
+# Test if joined MSA file has content.
+if (( $( head fam_corr_msa/fam.corr.msa.JOINED.tsv | wc -l | cut -d' ' -f1 ) == 0 )); then
+        echo "### Families JOINED MSA file is empty. ###"
+        exit 7
+fi
+
+##################################################################
+# Step 5: Du Novo - Make consensus sequences from aligned families
+##################################################################
+# example: make-consensi.py --fastq-out 40 families.msa.tsv --dcs1 duplex_1.fq --dcs2 duplex_2.fq
+#$DUNOVO/make-consensi.py --fastq-out 40 families.corrected.msa.tsv --dcs1 duplex_1.fq --dcs2 duplex_2.fq
+
+echo "# Preparing DCS files." 
+
+# With the MSA step done in split files, rejoined for this step.
+cat fam_corr_msa/fam.corr.msa.[1-9]*.tsv > fam_corr_msa/fam.corr.msa.JOINED.tsv
+$DUNOVO/make-consensi.py --fastq-out 40 fam_corr_msa/fam.corr.msa.JOINED.tsv --dcs1 duplex_1.fq --dcs2 duplex_2.fq
+
+################################################################################################
+# Step 6: PNAS paper - Trim 12bp from 5' to account for end-repair step from library preparation
+################################################################################################
+
+echo "# Trimming 5' end in fastq files (with Barbara's suggestions.)."
+
+trimmomatic PE -phred64 \
+	duplex_1.fq duplex_2.fq \
+	duplex_1.trim.fq duplex_1un.trim.fq \
+	duplex_2.trim.fq duplex_2un.trim.fq \
+	HEADCROP:12
+
+##############################################################################################
+# Step 7: Du Novo - Post-procesing (trim consensus reads with high-density of ambiguous bases)
+##############################################################################################
+# example: trimmer.py --acgt --window 10 --thres 0.3 --min-length 50 duplex_1.fa duplex_2.fa duplex.filt_1.fa duplex.filt_2.fa
+#$DUNOVO/bfx/trimmer.py --acgt --window 10 --thres 0.3 --min-length 50 duplex_1.fq duplex_2.fq duplex.filt_1.fq duplex.filt_2.fq
+
+echo "# Trimming reads with DuNovo suggestions."
+
+$DUNOVO/bfx/trimmer.py --acgt --window 10 --thres 0.3 --min-length 50 duplex_1.trim.fq duplex_2.trim.fq duplex.filt_1.fq duplex.filt_2.fq
+
+
+echo "Job ended"; date "+%Y-%m-%d.%H:%M:%S"
+
+
+

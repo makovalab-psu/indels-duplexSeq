@@ -1,0 +1,204 @@
+#!/bin/bash
+#SBATCH --job-name=bwa
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=20000
+#SBATCH --time=0-80:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=ejt89@psu.edu
+#SBATCH --chdir=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin
+#SBATCH --output=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-bwa%j.out
+#SBATCH --error=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-bwa%j.err
+
+echo "Job started"; date "+%Y-%m-%d.%H:%M:%S"
+
+# Standard tmp folder may be too small.
+TMPDIR=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/tmp
+
+# Conda environment.
+export CONDA_ENVS_PATH=/galaxy/home/ejt89/.conda/envs
+#source /opt/anaconda/etc/profile.d/conda.sh
+source /galaxy/home/ejt89/anaconda3/etc/profile.d/conda.sh
+##conda activate /galaxy/home/ejt89/.conda/envs/bioinfo
+source activate /galaxy/home/ejt89/.conda/envs/bioinfo
+##conda activate bioinfo
+conda info --envs
+conda list
+
+## Stop on errors and print all commands.
+set -uex
+
+################
+## Code testing.
+################
+if [[ $# -ne 2 ]] ; then
+    echo '### You need to provide two arguments: SPECIES , SRR_ID ###'
+    echo '### e.g. macaque SRR16770761 ###'
+    echo '### You provided '$#' argument(s). ###'
+    exit 1
+fi
+
+if [[ $2 = SRR* ]] ; then
+
+	echo "### The second argument starts with SRR ###"
+
+elif [[ $2 = hs[0-9][0-9][0-9]_* ]] ; then
+
+	echo "### The second argument is a Sample_ID for humans ($2) ###"
+
+elif [[ $2 = *_merged ]] ; then
+
+        echo "### The second argument is a merged sample ($2) ###"
+
+else
+	echo "### The second argument does NOT start with SRR ###"
+	exit 2
+fi
+
+
+# Assign the arguments.
+SPECIES=$1 #Species name (macaque or mouse)
+SAMPLE_ID=$2  #SRR_ID (e.g. SRR16770761) or Sample_ID for humans (e.g. hs003_Oo4)
+
+# File names: Duplex consensus reads (paired end).
+R1='duplex.filt_1.fq'
+R2='duplex.filt_2.fq'
+
+
+##################
+## Work directory
+#################
+cd ../results
+
+# Project ID (species_SRAproject).
+cd ${SPECIES}*/${SAMPLE_ID}
+
+# Print working directory.
+pwd
+
+#######
+# Tools:
+########
+BAMUTIL=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/bamUtil/bin/bam
+GATK=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/gatk-4.2.5.0/gatk
+
+
+##############
+## References:
+##############
+# Rhesus macaque (relinearized using `seqkit restart`).
+# Mouse genome (includes a fixed insertion of A present in this pedigree).
+
+# Picks the reference based on the project ID.
+if [ ${SAMPLE_ID} == 'SRR16770886' ]
+then
+	echo "# This sample (SRR16770886) was contaminated with mouse DNA other than the main macaque."
+	echo "# Using a combined fasta with both Mouse and Rhesus macaque references (rheMac10/NC_005089insA)."
+	# Just the chrM reference for macaque (rheMac10) and mouse (NC_005089_9821insA).
+	REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM.fa
+	REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM_relin8400.fa
+
+elif [ ${SPECIES} == 'macaque' ] ; then 
+	echo "# Using Rhesus macaque references (rheMac10)."
+	# Just the chrM reference for rheMac10.
+	#REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM.fa
+	#REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa	
+	# Full rheMac10 reference.
+	REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.fa
+	REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.relin8400.fa
+elif [ ${SPECIES} == 'mouse' ] ; then
+	echo "# Using mouse references (NC_005089insA)."
+	# Just the chrM reference for mouse (NC_005089_9821insA).
+	#REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM.fa
+	#REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
+
+	# Full GRCm38 (mm10) reference.
+	REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.fa
+	REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.relin8400.fa
+
+elif [ $SPECIES == 'human' ] ; then
+	echo "# Using human references (T2T nuclear + rCRS mtDNA)."
+	# Full human reference (T2T nuclear ref plus rCRS mtDNA ref).
+	#REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM.fa
+	#REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_relin8400.fa
+	# Human ref (excludes postion 3107, an N in the referecne due to historical mistakes).
+	REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_del3107.fa
+	REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_del3107_relin8400.fa
+
+else
+	echo "# Cannot recognize which reference to use."
+	exit 3
+fi
+
+
+###############################################
+#   Check if a sample has more than one SRR   #
+###############################################
+##
+##if [  ]
+##then
+##	mkdir
+##	bwa mem $REF <(cat SRR16770771/duplex.filt_1.fq SRR16770769/duplex.filt_1.fq) <(cat SRR16770771/duplex.filt_2.fq SRR16770769/duplex.filt_2.fq) | samtools sort
+##
+##else
+##        echo "# This sample does not seem to be part of ."
+##
+##fi
+
+
+
+############################################################
+#   Map duplex consensus reads to reference with bwa-mem   #
+############################################################
+# Create a BAM file and sort it (-t nThreads).
+### (Du Novo suggestion: GATK LeftAlignIndels | Alternative: freebayes' bamleftalign)
+### The same indel can often be placed at multiple positions and still represent the same haplotype.
+bwa mem $REF $R1 $R2 | samtools sort > alignments.bam
+
+# Exclude multi-mapped reads (keep uniquely-mapped reads).
+samtools view alignments.bam | grep -v "XA:" | samtools view -bS -T $REF - > alignments.umr.bam
+
+# Left-align indels from read data. 
+## The WellformedReadFilter default setting breaks if the read lengths are not consistent (which we trim) and if there is an N in the read.
+$GATK LeftAlignIndels -R $REF -I alignments.umr.bam -O alignments.bla.bam --disable-read-filter WellformedReadFilter
+
+# Clip overlapping read pairs.
+$BAMUTIL clipOverlap --in alignments.bla.bam --stats --out alignments.clipped.bam
+
+# Index the BAM file.
+samtools index alignments.clipped.bam
+
+# Keep the unmapped reads.
+samtools view -f4 alignments.clipped.bam > alignments.clipped.unmapped
+
+
+############################################################
+#   Map duplex consensus reads to RELINEARIZED reference   #
+############################################################
+# Create a BAM file and sort it (-t nThreads).
+### (Du Novo suggestion: GATK LeftAlignIndels | Alternative: freebayes' bamleftalign)
+### The same indel can often be placed at multiple positions and still represent the same haplotype.
+bwa mem $REFrelin $R1 $R2 | samtools sort > relin.alignments.bam
+
+# Exclude multi-mapped reads (keep uniquely-mapped reads).
+samtools view relin.alignments.bam | grep -v "XA:" | samtools view -bS -T $REFrelin - > relin.alignments.umr.bam
+
+# Left-align indels from read data.
+## The WellformedReadFilter default setting breaks if the read lengths are not consistent (which we trim) and if there is an N in the read.
+$GATK LeftAlignIndels -R $REFrelin -I relin.alignments.umr.bam -O relin.alignments.bla.bam --disable-read-filter WellformedReadFilter
+
+# Clip overlapping read pairs.
+$BAMUTIL clipOverlap --in relin.alignments.bla.bam --stats --out relin.alignments.clipped.bam
+
+# Index the BAM file.
+samtools index relin.alignments.clipped.bam
+
+# Keep the unmapped reads.
+samtools view -f4 relin.alignments.clipped.bam > relin.alignments.clipped.unmapped
+
+
+
+echo "Job ended"; date "+%Y-%m-%d.%H:%M:%S"
+
+

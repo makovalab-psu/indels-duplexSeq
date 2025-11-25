@@ -1,0 +1,156 @@
+#!/bin/bash
+#SBATCH --job-name=varCall
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=30000
+#SBATCH --time=0-80:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=ejt89@psu.edu
+#SBATCH --chdir=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin
+#SBATCH --output=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-varCall%j.out
+#SBATCH --error=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-varCall%j.err
+#SBATCH --exclude nn[6-8]
+
+echo "Job started"; date "+%Y-%m-%d.%H:%M:%S"
+
+# Standard tmp folder is too small.
+TMPDIR=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/tmp
+
+# Conda environment.
+export CONDA_ENVS_PATH=/galaxy/home/ejt89/.conda/envs
+#source /opt/anaconda/etc/profile.d/conda.sh
+source /galaxy/home/ejt89/anaconda3/etc/profile.d/conda.sh
+##conda activate /galaxy/home/ejt89/.conda/envs/nvc
+source activate /galaxy/home/ejt89/.conda/envs/nvc
+##conda activate nvc
+conda info --envs
+conda list
+
+## Stop on errors and print all commands.
+set -uex
+
+################
+## Code testing.
+################
+if [[ $# -ne 2 ]] ; then
+    echo '### You need to provide two arguments: SPECIES , SRR_ID ###'
+    echo '### e.g. macaque SRR16770761 ###'
+    echo '### You provided '$#' argument(s). ###'
+    exit 1
+fi
+
+if [[ $2 = [Sh][Rs][R0-9]* ]] ; then
+        echo "### The second argument starts with SRR or hs (for human samples) ###"
+
+elif [[ $2 = *_merged ]]; then
+	echo "### The second argument matches the format for a sample with multiple SRR runs. ###"
+	echo "### Pipeline will continue on this alignment from merged SRR runs. ###"	
+else
+        echo "### The second argument does NOT start with SRR (or hs for human samples), or match the format for a sample with multiple seq runs ('_merged'). ###"
+	exit 2
+fi
+
+# Assign the arguments.
+SPECIES=$1 #Species name (macaque or mouse)
+##SAMPLE_ID=$( echo $2 | rev | cut -d'/' -f1 | rev )  #SRR_ID (e.g. SRR16770761) or Sample_ID for humans (e.g. hs003_Oo4)
+SAMPLE_ID=$2  #SRR_ID (e.g. SRR16770761) or Sample_ID for humans (e.g. hs003_Oo4)
+
+# File names: Duplex consensus reads (paired end).
+R1='duplex.filt_1.fq'
+R2='duplex.filt_2.fq'
+
+
+##################
+## Work directory
+#################
+cd ../results
+
+# Project ID (species_SRAproject).
+cd ${SPECIES}*/${SAMPLE_ID}
+
+# Print working directory.
+pwd
+
+########
+# Tools:
+########
+NVC=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/nvc/nvc
+GATK=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/gatk-4.2.5.0/gatk
+
+
+##############
+## References:
+##############
+# Rhesus macaque (relinearized using `seqkit restart`).
+# Mouse genome (includes a fixed insertion of A present in this pedigree).
+
+# Picks the reference based on the project ID.
+if [ ${SAMPLE_ID} == 'SRR16770886' ]
+then
+        echo "# This sample (SRR16770886) was contaminated with mouse DNA other than the main macaque."
+        echo "# Using a combined fasta with both Mouse and Rhesus macaque references (rheMac10/NC_005089insA)."
+        # Just the chrM reference for macaque (rheMac10) and mouse (NC_005089_9821insA).
+        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM.fa
+        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM_relin8400.fa
+
+elif [ ${SPECIES} == 'macaque' ] ; then
+        echo "# Using Rhesus macaque references (rheMac10)."
+        # Just the chrM reference for rheMac10.
+        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM.fa
+        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa
+
+        # Full rheMac10 reference.
+        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.fa
+        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.relin8400.fa
+elif [ ${SPECIES} == 'mouse' ] ; then
+        echo "# Using mouse references (NC_005089insA)."
+        # Just the chrM reference for mouse (NC_005089_9821insA).
+        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM.fa
+        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
+        
+	# Full GRCm38 (mm10) reference.
+        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.fa
+        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.relin8400.fa
+
+elif [ $SPECIES == 'human' ] ; then
+        echo "# Using human references (T2T nuclear + rCRS mtDNA)."
+        # Full human reference (T2T nuclear ref plus rCRS mtDNA ref).
+        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM.fa
+        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_relin8400.fa
+	# Excludes N at 3107 of reference (historical seq error).
+	REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_del3107.fa
+        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_del3107_relin8400.fa
+else
+        echo "# Cannot recognize which reference to use."
+        exit 3
+fi
+
+
+
+#################################
+#	Variant calling		#
+#################################
+
+# Naive Variant Caller.
+echo "# Variant calling with NVC."
+python2 $NVC/naive_variant_caller.py \
+        -r $REF --region=chrM --use_strand --min_base_quality=0 --min_mapping_quality=20 --ploidy=1 \
+        -b alignments.clipped.bam -o variants.${SAMPLE_ID}.vcf
+
+
+################################################
+#       Variant calling (RELINEARIZED)         #
+################################################
+
+# Naive Variant Caller.
+echo "# Variant calling with NVC."
+python2 $NVC/naive_variant_caller.py \
+        -r $REFrelin --region=chrM --use_strand --min_base_quality=0 --min_mapping_quality=20 --ploidy=1 \
+        -b relin.alignments.clipped.bam -o relin.variants.${SAMPLE_ID}.vcf
+
+
+
+echo "Job ended"; date "+%Y-%m-%d.%H:%M:%S"
+
+
