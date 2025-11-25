@@ -89,42 +89,35 @@ SURVIVOR=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/SURVIVOR/Debug/S
 # Picks the reference based on the project ID.
 if [ ${SAMPLE_ID} == 'SRR16770886' ]
 then
-        echo "# This sample (SRR16770886) was contaminated with mouse DNA other than the main macaque."
-        echo "# Using a combined fasta with both Mouse and Rhesus macaque references (rheMac10/NC_005089insA)."
-        # Just the chrM reference for macaque (rheMac10) and mouse (NC_005089_9821insA).
-        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM.fa
-        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM_relin8400.fa
+	echo "# This sample (SRR16770886) was contaminated with mouse DNA other than the main macaque."
+	echo "# Using a combined fasta with both Mouse and Rhesus macaque references (rheMac10/NC_005089insA)."
+	# Just the chrM reference for macaque (rheMac10) and mouse (NC_005089_9821insA).
+	REF=.../data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM.fa
+	REFrelin=.../data/refs/contaminated_mac_mou/rheMac10_NC_005089_9821insA.chrM_relin8400.fa
 
-elif [ ${SPECIES} == 'macaque' ] ; then
-        echo "# Using Rhesus macaque references (rheMac10)."
-        # Just the chrM reference for rheMac10.
-        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM.fa
-        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa
-        # Full rheMac10 reference.
-        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.fa
-        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/rhesus_macaque/rheMac10.relin8400.fa
+elif [ ${SPECIES} == 'macaque' ] ; then 
+	echo "# Using Rhesus macaque references (rheMac10)."
+	# Just the chrM reference for rheMac10.
+	#REF=data/refs/rhesus_macaque/rheMac10.chrM.fa
+	#REFrelin=data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa	
+
 elif [ ${SPECIES} == 'mouse' ] ; then
-        echo "# Using mouse references (NC_005089insA)."
-        # Just the chrM reference for mouse (NC_005089_9821insA).
-        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM.fa
-        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
-
-        # Full GRCm38 (mm10) reference.
-        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.fa
-        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/mouse/Mus_musculus.GRCm38.NC_005089_9821insA.relin8400.fa
+	echo "# Using mouse references (NC_005089insA)."
+	# Just the chrM reference for mouse (NC_005089_9821insA).
+	#REF=data/refs/mouse/NC_005089_9821insA.chrM.fa
+	#REFrelin=data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
 
 elif [ $SPECIES == 'human' ] ; then
-        echo "# Using human references (T2T nuclear + rCRS mtDNA)."
-        # Full human reference (T2T nuclear ref plus rCRS mtDNA ref).
-        #REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM.fa
-        #REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_relin8400.fa
-	# Excludes N at 3107 of reference (historical seq error).
-        REF=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_3107.fa
-        REFrelin=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/data/refs/human/GCF_009914755.1_T2T-CHM13v2.0_genomic.with_chrM_del3107_relin8400.fa
+	echo "# Using human reference (NC_012920.1)"
+	# Human mtDNA ref (excludes position 3107, an N in the reference due to historical mistakes).
+	REF=data/refs/human/NC_012920.1.with_chrM_del3107.fa
+	REFrelin=data/refs/human/NC_012920.1.with_chrM_del3107_relin8400.fa
+
 else
-        echo "# Cannot recognize which reference to use."
-        exit 3
+	echo "# Cannot recognize which reference to use."
+	exit 3
 fi
+
 
 
 
@@ -196,49 +189,6 @@ $BCFTOOLS reheader --samples sample.txt  --header header.txt relin.variants.id.$
 
 # Filter for just substitutions.
 $BCFTOOLS reheader --samples sample.txt  --header header.txt relin.variants.id.${SAMPLE_ID}.vcf | $BCFTOOLS norm -m - | $BCFTOOLS view --exclude-types indels --exclude 'ALT="N"' > relin.subst.${SAMPLE_ID}.vcf
-
-
-
-# ARCHIVED SECTION
-############################################################################
-#       Merge variants mapped original and relinearized references         #
-############################################################################
-
-# Positions to use from relinearized and original references.
-#echo 'chrM 8165 8665' | sed 's/ /\t/g' > positions.relin1.bed
-POS_RELIN1=positions.relin1.bed
-#echo 'chrM 500 16064' | sed 's/ /\t/g' > positions.orig.bed
-POS_ORIG=positions.orig.bed
-#echo 'chrM 8665 9165' | sed 's/ /\t/g' > positions.relin2.bed
-POS_RELIN2=positions.relin2.bed
-
-# Merge the variants mapped to the two genomes.
-## The first and last 500bp from the relinearized sequence.
-### The other sites from the original sequence.
-#cat <(bedtools intersect -header -b $POS_RELIN1 -a relin.variants.${SAMPLE_ID}.vcf -wa) <(bedtools intersect -b $POS_ORIG -a variants.${SAMPLE_ID}.vcf -wa) <(bedtools intersect -b $POS_RELIN2 -a relin.variants.${SAMPLE_ID}.vcf -wa) > merged.variants.${SAMPLE_ID}.vcf
-#cat <(cat relin.variants.${SAMPLE_ID}.vcf | grep '#') \
-#	<(bedtools intersect -b $POS_RELIN1 -a relin.variants.${SAMPLE_ID}.vcf -wa | sed 's/chrM/chrM_relin/g' | paste <(seq 1 500) - | awk 'BEGIN{OFS="\t"} {print $2,$1,$4,$5,$6,$7,$8,$9,$10,$11,$12}') \
-#	<(bedtools intersect -b $POS_ORIG -a variants.${SAMPLE_ID}.vcf -wa) \
-#	<(bedtools intersect -b $POS_RELIN2 -a relin.variants.${SAMPLE_ID}.vcf -wa | sed 's/chrM/chrM_relin/g' | paste <(seq 16065 16564) - | awk 'BEGIN{OFS="\t"} {print $2,$1,$4,$5,$6,$7,$8,$9,$10,$11,$12}' ) > merged.variants.${SAMPLE_ID}.vcf
-
-# Prepare new VCF header.
-#cat merged.variants.${SAMPLE_ID}.vcf | grep '##' > header.txt
-#echo "##contig=<ID=chrM,length=16564>" >> header.txt
-#echo "##contig=<ID=chrM_relin,length=16564>" >> header.txt
-#cat merged.variants.${SAMPLE_ID}.vcf | grep '#CHROM' >> header.txt
-
-# Prepare sample name into a file.
-#echo $SAMPLE_ID > sample.txt
-
-# Filter the merged for indel variants.
-#echo "# Filtering merged file for indels."
-#$BCFTOOLS reheader --samples sample.txt --header header.txt merged.variants.${SAMPLE_ID}.vcf | $BCFTOOLS norm -m - | $BCFTOOLS view -v indels | $BCFTOOLS norm -m+ > merged.indels.${SAMPLE_ID}.vcf
-
-
-# Test to modify chr position of relinearized genome variants.
-#bedtools intersect -b positions.relin.bed -a relin.variants.vcf -wa | paste <(cat <(seq 1 500) <(seq 16065 16564)) - | awk 'BEGIN{OFS="\t"} {print $2,$1,$4,$5,$6,$7,$8,$9,$10,$11,$12}' > relin.1000.variants.${SAMPLE_ID}.vcf
-
-
 
 
 
