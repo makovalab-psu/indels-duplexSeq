@@ -5,13 +5,17 @@ Edmundo Torres-González, Barbara Arbeithuber, Nick Stoler, Marzia A. Cremona, O
 
 *Correspondence to Kateryna D. Makova ([kdm16@psu.edu](mailto:kdm16@psu.edu))
 
+
 ## Directory Structure
 
 This repository contains the following directories:
 
 1. **`Du Novo pipeline and variant calling`**: Includes all Python and Bash scripts necessary for analyzing the sequencing data, generating duplex consensus reads, map these to a reference genome, and perform variant calling.
 
-2. 
+2. **`Variant filtering, frequencies, and hotspots`**: Contains Jupyter notebooks for filtering indels, computing indel frequencies, and estimating the effect of variant hotspots.
+
+3. **``**: 
+
 
 **Some key dependencies required for the analyses in this manuscript are:**
 
