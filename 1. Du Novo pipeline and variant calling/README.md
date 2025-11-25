@@ -10,6 +10,6 @@ This directory contains the Jupyter notebooks required to identify indels from d
 
 - **`E_get_indels.job`**: Filters VCF for indels by excluding nucleotide substitutions.
 
-- **`F_mean_mapped_read_depth.job`**: Computes mean mapped read depth across mtDNA positions for each sample using `SAMTOOLS MPILEUP` (https://www.htslib.org/doc/samtools-mpileup.html) and BASH commands.
+- **`F_mean_mapped_DCS_depth.job`**: Computes mean mapped DCS depth across mtDNA positions for each sample using `SAMTOOLS MPILEUP` (https://www.htslib.org/doc/samtools-mpileup.html) and BASH commands.
 
 - **`G_mergeVCFs.job`**: Merges variant calls across samples into a single file per species.
