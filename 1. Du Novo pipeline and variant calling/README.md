@@ -1,4 +1,4 @@
-This directory contains all the Jupyter notebooks required to analyze data and generate the plots for this paper. To ensure proper execution, run the notebooks in the sequence listed below, as they may have dependencies on prior notebooks or generated datasets. The order is as follows:
+This directory contains the Jupyter notebooks required to identify indels from duplex sequencing data. To ensure proper execution, run the notebooks in the sequence listed below, as they may have dependencies on prior notebooks or generated datasets. The order is as follows:
 
 - `A_dunovo.job`: Generates duplex consensus sequences (DCS) from sequencing reads using the `Du Novo pipeline` (https://github.com/galaxyproject/dunovo).
 
