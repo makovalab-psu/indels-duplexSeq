@@ -9,3 +9,10 @@ Edmundo Torres-González, Barbara Arbeithuber, Nick Stoler, Marzia A. Cremona, O
 
 This repository contains the following directories:
 
+1. Du Novo pipeline and variant calling
+
+2. 
+
+**Some key dependencies required for the analyses in this manuscript are:**
+
+- 
