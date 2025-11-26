@@ -1,47 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=meanReadDepth
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --mem=10000
-#SBATCH --time=0-80:00:00
-#SBATCH --mail-type=END
-#SBATCH --mail-user=ejt89@psu.edu
-#SBATCH --chdir=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin
-#SBATCH --output=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-meanR%j.out
-#SBATCH --error=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-meanR%j.err
-#SBATCH --exclude nn[6-8]
-
-echo "Job started"; date "+%Y-%m-%d.%H:%M:%S"
-
-# Conda environment.
-export CONDA_ENVS_PATH=/galaxy/home/ejt89/.conda/envs
-#source /opt/anaconda/etc/profile.d/conda.sh
-source /galaxy/home/ejt89/anaconda3/etc/profile.d/conda.sh
-##conda activate /galaxy/home/ejt89/.conda/envs/bioinfo
-source activate /galaxy/home/ejt89/.conda/envs/bioinfo
-##conda activate bioinfo
-conda info --envs
-conda list
-
-# Standard tmp folder is too small.
-TMPDIR=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/tmp
 
 # Stop on errors and print all commands.
-set -uex
 
-################
-## Code testing.
-################
-if [[ $# -ne 1 ]] ; then
-    echo '### You need to provide one argument: SPECIES ###'
-    echo '### e.g. macaque ###'
-    echo '### You provided '$#' argument(s). ###'
-    exit 1
-fi
+#################
+#  Parameters	#
+#################
 
 # Assign the arguments.
 SPECIES=$1 #Species name (macaque, mouse, or human)
-GENOME='nuDNA' #'chrM' or 'nuDNA'
+GENOME='chrM'
 
 # Mt genome size based on species.
 	if [ ${SPECIES} = 'macaque' ] ; then
@@ -57,14 +24,6 @@ GENOME='nuDNA' #'chrM' or 'nuDNA'
 		#echo "### Species (${SPECIES}) not recognized."
 		exit 2
 	fi
-
-################
-# Work directory
-################
-cd ../results
-
-# Project ID (species_SRAproject)
-cd ${SPECIES}*
 
 
 #########################################################
@@ -127,5 +86,3 @@ for ID in $( ls --color=no | grep '[GRSh][0-9hRs][R0-9]'  ); do \
 ###done > meanReadDepths_${SPECIES}.txt
 done > meanReadDepths.${GENOME}.${SPECIES}.txt
 
-
-echo "Job ended"; date "+%Y-%m-%d.%H:%M:%S"
