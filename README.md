@@ -14,7 +14,7 @@ This repository contains the following directories:
 
 2. **`Variant filtering, frequencies, and hotspots`**: Contains Jupyter notebooks for filtering indels, computing indel frequencies, and estimating the effect of variant hotspots.
 
-3. **``**: 
+3. **`Plots`**: Contains Jupyter notebooks that generated all the plots include in the manuscript.
 
 
 **Some key dependencies required for the analyses in this manuscript are:**
