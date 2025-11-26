@@ -19,4 +19,6 @@ This repository contains the following directories:
 
 **Some key dependencies required for the analyses in this manuscript are:**
 
-- 
+- **`Du Novo`**: A pipeline for processing duplex sequencing data without the use of a reference (https://github.com/galaxyproject/dunovo).
+
+- **`Naive Variant Caller`**: processes BAM alignments and produces a VCF containing per position variant calls (https://github.com/blankenberg/nvc).
