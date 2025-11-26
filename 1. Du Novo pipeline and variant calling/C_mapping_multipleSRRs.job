@@ -1,105 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=bwa_multiSRR
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=10000
-#SBATCH --time=0-80:00:00
-#SBATCH --mail-type=END
-#SBATCH --mail-user=ejt89@psu.edu
-#SBATCH --chdir=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin
-#SBATCH --output=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-%j.out
-#SBATCH --error=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/bin/log/ejt89-%j.err
-#SBATCH --exclude nn[6-8]
-
-echo "Job started"; date "+%Y-%m-%d.%H:%M:%S"
-
-# Standard tmp folder may be too small.
-TMPDIR=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/tmp
-
-# Conda environment.
-export CONDA_ENVS_PATH=/galaxy/home/ejt89/.conda/envs
-#source /opt/anaconda/etc/profile.d/conda.sh
-source /galaxy/home/ejt89/anaconda3/etc/profile.d/conda.sh
-##conda activate /galaxy/home/ejt89/.conda/envs/bioinfo
-source activate /galaxy/home/ejt89/.conda/envs/bioinfo
-##conda activate bioinfo
-conda info --envs
-conda list
 
 ## Stop on errors and print all commands.
 set -uex
-
-################
-## Code testing.
-################
-if [[ $# -ne 2 ]] ; then
-	echo '### You need to provide two arguments: SPECIES , SAMPLE_ID ###'
-	echo '### e.g. macaque Rh020_M_1 ###'
-	echo '### Consult the runids_sampleids.txt file for this species ###'
-	echo '### You provided '$#' argument(s). ###'
-	exit 1
-elif [[ $2 != Rh* && $2 != G* ]] ; then
-	echo "### This is not the correct Sample ID. Should be something like Rh020_M_1 or Rh020_M_merged (for macaque), or G132p5_M_1 or G132p5_M_merged (for mouse) ###"
-	exit 2
-fi
-
-#######################
-# Assign the arguments.
-#######################
-SPECIES=$1 #Species name (macaque or mouse)
-SAMPLE_ID=$(echo $2 | sed 's/_merged/_1/g')
-SAMPLE_ID_1=`echo $SAMPLE_ID | sed 's/_2/_1/g'`
-SAMPLE_ID_2=`echo $SAMPLE_ID | sed 's/_1/_2/g'`
-SAMPLE_ID_3=`echo $SAMPLE_ID | sed 's/_1/_3/g' | sed 's/_2/_3/g'`
-
-
-###################
-# Project directory.
-###################
-cd ../results
-cd ${SPECIES}*
-
-# Check if the runids/sample ids file exists (derived from SRA accession). 
-FILE=runids_sampleids.txt
-if [ -f "$FILE" ]; then
-	echo "### $FILE exists."
-else 
-	echo "### $FILE does not exist."
-	exit 3
-fi
-
-
-###################
-# Update arguments.
-###################
-# Get the SRR_IDs that correspond to the sample IDs.
-SRR_1=`cat runids_sampleids.txt | grep $SAMPLE_ID_1 | cut -f1`
-SRR_2=`cat runids_sampleids.txt | grep $SAMPLE_ID_2 | cut -f1`
-SRR_3=`cat runids_sampleids.txt | grep $SAMPLE_ID_3 | cut -f1`
-
-# Test if the sample IDs correspond to a SRR id.
-if [[ $SRR_1 = SRR* ]] ; then
-	echo "### The following SAMPLE_ID_1 argument ( ${SAMPLE_ID_1} ) does correspond to a SRR in the runids_sampleids.txt file ###"
-else
-	echo "### The SAMPLE_ID_1 argument (${SAMPLE_ID_1}) does NOT correspond to a SRR in the runids_sampleids.txt file ###"
-	exit 4
-fi
-
-if [[ $SRR_2 = SRR* ]] ; then
-        echo "### The SAMPLE_ID_2 argument (${SAMPLE_ID_2}) does correspond to a SRR in the runids_sampleids.txt file ###"
-else
-        echo "### The SAMPLE_ID_2 argument (${SAMPLE_ID_2}) does NOT correspond to a SRR in the runids_sampleids.txt file ###"
-        exit 5
-fi
-
-if [[ $SRR_3 = SRR* ]] ; then
-        echo "### The SAMPLE_ID_3 argument (${SAMPLE_ID_3}) does correspond to a SRR in the runids_sampleids.txt file ###"
-else
-        echo "### The SAMPLE_ID_3 argument (${SAMPLE_ID_3}) does NOT correspond to a SRR in the runids_sampleids.txt file ###"
-	echo "### This is expected, as most SAMPLE IDs do NOT have a 3rd SRR run. ###"
-        ###exit 6
-fi
 
 
 #######
@@ -107,6 +9,7 @@ fi
 ########
 BAMUTIL=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/bamUtil/bin/bam
 GATK=/nfs/brubeck.bx.psu.edu/scratch4/edmundo/duplexSeq/src/gatk-4.2.5.0/gatk
+
 
 ##############
 ## References:
@@ -126,14 +29,14 @@ then
 elif [ ${SPECIES} == 'macaque' ] ; then 
 	echo "# Using Rhesus macaque references (rheMac10)."
 	# Just the chrM reference for rheMac10.
-	#REF=data/refs/rhesus_macaque/rheMac10.chrM.fa
-	#REFrelin=data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa	
+	REF=data/refs/rhesus_macaque/rheMac10.chrM.fa
+	REFrelin=data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa	
 
 elif [ ${SPECIES} == 'mouse' ] ; then
 	echo "# Using mouse references (NC_005089insA)."
 	# Just the chrM reference for mouse (NC_005089_9821insA).
-	#REF=data/refs/mouse/NC_005089_9821insA.chrM.fa
-	#REFrelin=data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
+	REF=data/refs/mouse/NC_005089_9821insA.chrM.fa
+	REFrelin=data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
 
 elif [ $SPECIES == 'human' ] ; then
 	echo "# Using human reference (NC_012920.1)"
@@ -246,9 +149,5 @@ samtools index relin.alignments.clipped.bam
 
 # Keep the unmapped reads.
 samtools view -f4 relin.alignments.clipped.bam > relin.alignments.clipped.unmapped
-
-
-
-echo "Job ended"; date "+%Y-%m-%d.%H:%M:%S"
 
 
