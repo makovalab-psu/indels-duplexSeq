@@ -14,9 +14,11 @@ This repository contains the following directories:
 
 2. **`Variant filtering, frequencies, and hotspots`**: Contains Jupyter notebooks for filtering indels, computing indel frequencies, and estimating the effect of variant hotspots.
 
-3. **``**: 
+3. **`Plots`**: Contains Jupyter notebooks that generated all the plots include in the manuscript.
 
 
 **Some key dependencies required for the analyses in this manuscript are:**
 
-- 
+- **`Du Novo`**: A pipeline for processing duplex sequencing data without the use of a reference.
+
+- **`Naive Variant Caller`**: processes BAM alignments and produces a VCF containing per position variant calls.
