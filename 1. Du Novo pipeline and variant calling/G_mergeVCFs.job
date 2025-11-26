@@ -8,6 +8,7 @@ set -uex
 SPECIES=$1 #Species name (macaque, mouse, or human)
 echo $SPECIES
 
+
 ################
 # Work directory
 ################
@@ -21,6 +22,7 @@ mkdir -p mod_indels
 mkdir -p mod_relin_indels
 mkdir -p mod_subst
 mkdir -p mod_relin_subst
+
 
 #########################################################
 #  Merge all variant VCFs using a python script 	#
@@ -49,21 +51,21 @@ elif [[ $SPECIES == "mouse" ]] ; then
 fi
 
 # Modify the INFO column of VCFs.
-bash ../../bin/modifyINFO.sh indels
-bash ../../bin/modifyINFO.sh relin_indels
-bash ../../bin/modifyINFO.sh subst
-bash ../../bin/modifyINFO.sh relin_subst
+bash utils/modifyINFO.sh indels
+bash utils/modifyINFO.sh relin_indels
+bash utils/modifyINFO.sh subst
+bash utils/modifyINFO.sh relin_subst
 
 # Script that merges VCFs into one multiVCF (using bcftools merge).
-bash ../../bin/multisamp_vcf.sh indels
-bash ../../bin/multisamp_vcf.sh relin_indels
-bash ../../bin/multisamp_vcf.sh mod_indels
-bash ../../bin/multisamp_vcf.sh mod_relin_indels
+bash utils/multisamp_vcf.sh indels
+bash utils/multisamp_vcf.sh relin_indels
+bash utils/multisamp_vcf.sh mod_indels
+bash utils/multisamp_vcf.sh mod_relin_indels
 
-bash ../../bin/multisamp_vcf.sh subst
-bash ../../bin/multisamp_vcf.sh relin_subst
-bash ../../bin/multisamp_vcf.sh mod_subst
-bash ../../bin/multisamp_vcf.sh mod_relin_subst
+bash utils/multisamp_vcf.sh subst
+bash utils/multisamp_vcf.sh relin_subst
+bash utils/multisamp_vcf.sh mod_subst
+bash utils/multisamp_vcf.sh mod_relin_subst
 
 
 
