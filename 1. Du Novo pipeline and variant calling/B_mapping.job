@@ -38,14 +38,14 @@ then
 elif [ ${SPECIES} == 'macaque' ] ; then 
 	echo "# Using Rhesus macaque references (rheMac10)."
 	# Just the chrM reference for rheMac10.
-	#REF=data/refs/rhesus_macaque/rheMac10.chrM.fa
-	#REFrelin=data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa	
+	REF=data/refs/rhesus_macaque/rheMac10.chrM.fa
+	REFrelin=data/refs/rhesus_macaque/rheMac10.chrM_relin8400.fa	
 
 elif [ ${SPECIES} == 'mouse' ] ; then
 	echo "# Using mouse references (NC_005089insA)."
 	# Just the chrM reference for mouse (NC_005089_9821insA).
-	#REF=data/refs/mouse/NC_005089_9821insA.chrM.fa
-	#REFrelin=data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
+	REF=data/refs/mouse/NC_005089_9821insA.chrM.fa
+	REFrelin=data/refs/mouse/NC_005089_9821insA.chrM_relin8400.fa
 
 elif [ $SPECIES == 'human' ] ; then
 	echo "# Using human reference (NC_012920.1)"
