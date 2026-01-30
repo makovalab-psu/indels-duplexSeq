@@ -1,0 +1,25 @@
+Species	Tissue	Region	Mean frequency	"Fold difference
+means"	"Median
+frequency"	"Fold difference
+medians"	"p-value
+(1-sided)"	Significance	"FDR-corr
+p-value
+(1-sided)"
+Mouse	Oocytes	D-loop	1.69e-07	3.1	0.00e+00	0.0	0.99	ns	1.00
+Mouse	Oocytes	non-D-loop	5.43e-08	-	6.03e-08	-	-	-	-
+Mouse	Skeletal muscle	D-loop	2.42e-07	2.0	0.00e+00	0.0	0.99	ns	1.00
+Mouse	Skeletal muscle	non-D-loop	1.18e-07	-	9.68e-08	-	-	-	-
+Mouse	Brain	D-loop	7.55e-08	0.7	0.00e+00	0.0	1.00	ns	1.00
+Mouse	Brain	non-D-loop	1.13e-07	-	8.63e-08	-	-	-	-
+Macaque	Oocytes	D-loop	3.42e-07	9.9	0.00e+00	0.0	0.66	ns	1.00
+Macaque	Oocytes	non-D-loop	3.45e-08	-	7.47e-09	-	-	-	-
+Macaque	Skeletal muscle	D-loop	6.73e-07	3.0	5.59e-07	2.9	4.12e-03	**	0.04
+Macaque	Skeletal muscle	non-D-loop	2.25e-07	-	1.94e-07	-	-	-	-
+Macaque	Liver	D-loop	7.23e-07	1.2	5.25e-07	1.1	0.50	ns	1.00
+Macaque	Liver	non-D-loop	5.94e-07	-	4.74e-07	-	-	-	-
+Human	Oocytes	D-loop	2.86e-07	10.5	0.00e+00	0.0	0.51	ns	1.00
+Human	Oocytes	non-D-loop	2.72e-08	-	1.50e-08	-	-	-	-
+Human	Saliva	D-loop	0.00e+00	0.0	0.00e+00	N/A	0.97	ns	1.00
+Human	Saliva	non-D-loop	2.33e-07	-	0.00e+00	-	-	-	-
+Human	Blood	D-loop	1.74e-07	1.0	0.00e+00	N/A	0.91	ns	1.00
+Human	Blood	non-D-loop	1.81e-07	-	0.00e+00	-	-	-	-

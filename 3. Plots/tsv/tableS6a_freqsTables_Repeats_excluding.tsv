@@ -1,0 +1,21 @@
+Species	Tissue	Region	Mean frequency	"Fold difference
+(STR/ Non-STR)"	p-value (1-sided)	Significance	"FDR-corr p-value
+(1-sided)"
+Mouse	Oocytes	STR	3.26e-07	3.3	9.45e-03	**	0.02
+Mouse	Oocytes	Non-STR	9.85e-08	-	-	-	-
+Mouse	Skeletal muscle	STR	3.61e-07	13.4	1.12e-03	**	3.36e-03
+Mouse	Skeletal muscle	Non-STR	2.69e-08	-	-	-	-
+Mouse	Brain	STR	1.94e-07	5.6	0.09	ns	0.13
+Mouse	Brain	Non-STR	3.48e-08	-	-	-	-
+Macaque	Oocytes	STR	3.22e-07	7.7	0.17	ns	0.22
+Macaque	Oocytes	Non-STR	4.18e-08	-	-	-	-
+Macaque	Skeletal muscle	STR	1.24e-06	7.5	4.63e-09	***	2.08e-08
+Macaque	Skeletal muscle	Non-STR	1.67e-07	-	-	-	-
+Macaque	Liver	STR	2.92e-06	9.9	4.24e-09	***	2.08e-08
+Macaque	Liver	Non-STR	2.94e-07	-	-	-	-
+Human	Oocytes	STR	2.57e-07	6.4	5.27e-03	**	0.01
+Human	Oocytes	Non-STR	4.03e-08	-	-	-	-
+Human	Saliva	STR	8.28e-07	2.6	0.69	ns	0.69
+Human	Saliva	Non-STR	3.19e-07	-	-	-	-
+Human	Blood	STR	8.83e-07	3.8	0.35	ns	0.40
+Human	Blood	Non-STR	2.34e-07	-	-	-	-

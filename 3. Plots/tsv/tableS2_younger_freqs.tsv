@@ -1,0 +1,13 @@
+Species	"Comparison
+( X vs. Y )"	"Fold difference
+( Y / X )"	"p-value
+(2-sided)"	FDR	Significance
+Mouse	Oocytes vs Skeletal muscle	0.3	1.33e-10	3.98e-10	***
+Mouse	Oocytes vs Brain	0.2	2.47e-13	1.11e-12	***
+Mouse	Skeletal muscle vs Brain	0.7	0.26	0.29	ns
+Macaque	Oocytes vs Skeletal muscle	1.7	3.42e-07	7.70e-07	***
+Macaque	Oocytes vs Liver	2.7	5.58e-22	5.02e-21	***
+Macaque	Skeletal muscle vs Liver	1.6	4.30e-07	7.75e-07	***
+Human	Oocytes vs Saliva	5.4	5.03e-04	6.46e-04	***
+Human	Oocytes vs Blood	7.5	8.12e-06	1.22e-05	***
+Human	Saliva vs Blood	1.4	0.62	0.62	ns

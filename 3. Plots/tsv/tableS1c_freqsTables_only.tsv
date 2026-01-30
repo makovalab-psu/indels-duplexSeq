@@ -1,0 +1,32 @@
+Species	Tissue	Age group	Mean frequency	"Fold difference
+(Older/Younger)"	"p-value
+(1-sided)"	Significance	"FDR-corr
+p-value
+(1-sided)"
+Mouse	Oocytes	Younger	4.62e-08	2.0	0.02	*	0.05
+Mouse	Oocytes	Older	9.07e-08	-	-	-	-
+Mouse	Skeletal muscle	Younger	1.13e-07	1.5	0.07	ns	0.13
+Mouse	Skeletal muscle	Older	1.67e-07	-	-	-	-
+Mouse	Brain	Younger	9.08e-08	2.0	0.02	*	0.05
+Mouse	Brain	Older	1.81e-07	-	-	-	-
+Macaque	Oocytes	Younger	3.12e-08	0.2	0.88	ns	0.88
+Macaque	Oocytes	Intermediate 1	4.17e-08	-	-	-	-
+Macaque	Oocytes	Intermediate 2	1.60e-07	-	-	-	-
+Macaque	Oocytes	Older	7.28e-09	-	-	-	-
+Macaque	Skeletal muscle	Younger	1.44e-07	2.3	0.02	*	0.05
+Macaque	Skeletal muscle	Intermediate 1	2.48e-07	-	-	-	-
+Macaque	Skeletal muscle	Intermediate 2	3.30e-07	-	-	-	-
+Macaque	Skeletal muscle	Older	3.26e-07	-	-	-	-
+Macaque	Liver	Younger	2.99e-07	4.0	3.50e-04	***	3.15e-03
+Macaque	Liver	Intermediate 1	3.27e-07	-	-	-	-
+Macaque	Liver	Intermediate 2	6.89e-07	-	-	-	-
+Macaque	Liver	Older	1.18e-06	-	-	-	-
+Human	Oocytes	Younger	6.29e-08	0.7	0.52	ns	0.67
+Human	Oocytes	Intermediate	2.47e-08	-	-	-	-
+Human	Oocytes	Older	4.15e-08	-	-	-	-
+Human	Saliva	Younger	1.62e-07	1.4	0.50	ns	0.67
+Human	Saliva	Intermediate	4.12e-07	-	-	-	-
+Human	Saliva	Older	2.31e-07	-	-	-	-
+Human	Blood	Younger	1.86e-07	0.5	0.80	ns	0.88
+Human	Blood	Intermediate	3.54e-07	-	-	-	-
+Human	Blood	Older	8.85e-08	-	-	-	-

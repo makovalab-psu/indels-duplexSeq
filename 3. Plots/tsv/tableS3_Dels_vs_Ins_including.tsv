@@ -1,0 +1,24 @@
+Species	Tissue	Mutation type	Mean frequency	"Fold difference
+(Deletions/
+Insertions)"	"p-value
+(1-sided)"	Significance	"FDR-corr
+p-value
+(1-sided)"
+Mouse	Oocytes	Deletion	1.38e-07	2.48	1.83e-03	**	6.08e-03
+Mouse	Oocytes	Insertion	5.58e-08	-	-	-	-
+Mouse	Skeletal muscle	Deletion	1.46e-07	2.52	1.79e-03	**	6.08e-03
+Mouse	Skeletal muscle	Insertion	5.78e-08	-	-	-	-
+Mouse	Brain	Deletion	1.21e-07	2.46	4.99e-03	**	0.01
+Mouse	Brain	Insertion	4.92e-08	-	-	-	-
+Macaque	Oocytes	Deletion	6.66e-08	1.04	0.60	ns	0.79
+Macaque	Oocytes	Insertion	6.39e-08	-	-	-	-
+Macaque	Skeletal muscle	Deletion	3.26e-07	1.44	0.04	*	0.07
+Macaque	Skeletal muscle	Insertion	2.26e-07	-	-	-	-
+Macaque	Liver	Deletion	9.13e-07	3.03	2.25e-05	***	2.25e-04
+Macaque	Liver	Insertion	3.01e-07	-	-	-	-
+Human	Oocytes	Deletion	5.27e-08	0.89	0.71	ns	0.79
+Human	Oocytes	Insertion	5.93e-08	-	-	-	-
+Human	Saliva	Deletion	4.35e-07	2.66	0.11	ns	0.18
+Human	Saliva	Insertion	1.64e-07	-	-	-	-
+Human	Blood	Deletion	2.05e-07	0.70	0.70	ns	0.79
+Human	Blood	Insertion	2.90e-07	-	-	-	-
