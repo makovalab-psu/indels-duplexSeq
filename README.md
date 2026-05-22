@@ -1,10 +1,11 @@
-# Mammalian Mitochondrial DNA Accumulates Insertions and Deletions with Age in Energetically Demanding Tissues
+# Mammalian mitochondrial DNA accumulates insertions and deletions with age in energetically demanding tissues
 #### This repository contains all the code generated for the manuscript.
 
 Edmundo Torres-González, Barbara Arbeithuber, Nick Stoler, Marzia A. Cremona, Omar Shebl, Thomas Ebner, Irene Tiemann-Boege, Francisco Diaz, Francesca Chiaromonte, and Kateryna D. Makova*
 
 *Correspondence to Kateryna D. Makova ([kdm16@psu.edu](mailto:kdm16@psu.edu))
 
+doi: [10.1093/molbev/msag035](https://doi.org/10.1093/molbev/msag035)
 
 ## Directory Structure
 
